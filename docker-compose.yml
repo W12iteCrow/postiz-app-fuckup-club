@@ -1,0 +1,104 @@
+# Do **not** use this yml for production. It is not up-to-date. 
+# Use https://docs.postiz.com/installation/docker-compose
+
+services:
+  app:
+    image: ghcr.io/gitroomhq/postiz-app:latest
+    container_name: my-app
+    restart: always
+    environment:
+      MAIN_URL: "https://borusan.site"
+      FRONTEND_URL: "https://borusan.site"
+      NEXT_PUBLIC_BACKEND_URL: "https://borusan.site/api"
+      JWT_SECRET: "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJGdWNrdXBDbHViIiwiVXNlcm5hbWUiOiJGdWNrdXBDbHViQWRtaW4iLCJleHAiOjE3MTY0NTY3ODl9.KcVxZ3RtF8XQmXoT5jLYfcQzHQKpXH_2Y9vJ6f4ZXNM"
+      DATABASE_URL: "postgresql://my-user:my-password@postgres:5432/my-db"
+      REDIS_URL: "redis://redis:6379"
+      BACKEND_INTERNAL_URL: "http://localhost:3000"
+      IS_GENERAL: "true"
+      STORAGE_PROVIDER: "local"
+      UPLOAD_DIRECTORY: "/uploads"
+      NEXT_PUBLIC_UPLOAD_DIRECTORY: "/uploads"
+    volumes:
+      - app-config:/config/
+      - app-uploads:/uploads/
+    ports:
+      - 5000:5000
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  postgres:
+    # ref: https://hub.docker.com/_/postgres
+    image: postgres:17-alpine # 17.0
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: my-password
+      POSTGRES_USER: my-user
+      POSTGRES_DB: my-db
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - app-network
+    healthcheck:
+      test: pg_isready -U my-user -d my-db
+      interval: 10s
+      timeout: 3s
+      retries: 3
+  redis:
+    # ref: https://hub.docker.com/_/redis
+    image: redis:7-alpine # 7.4.0
+    container_name: redis
+    restart: always
+    ports:
+      - 6379:6379
+    networks:
+      - app-network
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 3s
+      retries: 3
+  pg-admin:
+    # ref: https://hub.docker.com/r/dpage/pgadmin4/tags
+    image: dpage/pgadmin4:latest
+    container_name: pg-admin
+    restart: always
+    ports:
+      - 8081:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    networks:
+      - app-network
+  redisinsight:
+    # ref: https://hub.docker.com/r/redis/redisinsight
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    links:
+      - redis
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight:/data
+    networks:
+      - app-network
+    restart: always
+
+volumes:
+  redisinsight:
+  postgres-volume:
+    external: false
+  app-config:
+    external: false
+  app-uploads:
+    external: false
+
+networks:
+  app-network:
+    external: false

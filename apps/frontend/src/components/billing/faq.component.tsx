@@ -13,9 +13,9 @@ const useFaqList = () => {
     ...(user?.allowTrial
       ? [
           {
-            title: 'Am I going to be charged by Postiz?',
+            title: 'Am I going to be charged by Your Brand Name?',
             description:
-              'To confirm credit card information Postiz will hold $2 and release it immediately',
+              'To confirm credit card information Your Brand Name will hold $2 and release it immediately',
           },
         ]
       : []),
